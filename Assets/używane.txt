@@ -1,0 +1,5 @@
+Generowanie szumu
+https://github.com/Auburn/FastNoiseLite
+
+Transvoxel -- mo¿e u¿yjê
+https://transvoxel.org/

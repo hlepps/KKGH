@@ -1,0 +1,23 @@
+#pragma kernel CSMain
+#include "OpenSource/FastNoiseLite.hlsl"
+#include "Common.hlsl"
+
+float _Frequency;
+int _Octaves;
+int _Seed;
+int3 _Offset;
+
+RWStructuredBuffer<float> _Values;
+
+[numthreads(numberOfThreads, numberOfThreads, numberOfThreads)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    fnl_state noise = fnlCreateState();
+    noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
+    noise.fractal_type = FNL_FRACTAL_PINGPONG;
+    noise.frequency = _Frequency;
+    noise.octaves = _Octaves;
+    noise.seed = _Seed;
+    
+    _Values[indexFromCoordinates(id.x, id.y, id.z)] = fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z);
+}
