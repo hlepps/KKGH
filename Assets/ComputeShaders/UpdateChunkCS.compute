@@ -1,0 +1,23 @@
+#pragma kernel CSMain
+#include "Common.hlsl"
+
+RWStructuredBuffer<float> _Values;
+
+float3 _CirclePosition;
+float _CircleRadius;
+float _Change;
+
+[numthreads(numberOfThreads, numberOfThreads, numberOfThreads)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    /*for (int i = 0; i < 32 * 32 * 32;i++)
+    {
+        _Values[i] = id.y;
+    }*/
+    float temp = sqrt(pow((float) (id.x) - _CirclePosition.x, 2) + pow((float) (id.y) - _CirclePosition.y, 2) + pow((float) (id.z) - _CirclePosition.z, 2));
+    if(temp <= _CircleRadius)
+    {
+        _Values[indexFromCoordinates(id.x, id.y, id.z)] = clamp(_Values[indexFromCoordinates(id.x, id.y, id.z)] + _Change, 0, 1);
+    }
+
+}

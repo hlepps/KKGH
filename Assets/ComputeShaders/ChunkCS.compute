@@ -1,10 +1,15 @@
 #pragma kernel CSMain
 #include "OpenSource/MarchingCubesTables.hlsl"
+#include "OpenSource/Quaternion.hlsl"
 #include "Common.hlsl"
+
 
 struct Triangle
 {
     float3 a, b, c;
+    float2 auv;
+    float2 buv;
+    float2 cuv;
 };
 AppendStructuredBuffer<Triangle> _Triangles;
 
@@ -22,6 +27,9 @@ float3 interpolate(float3 edgeVertex1, float valueAtVertex1, float3 edgeVertex2,
 [numthreads(numberOfThreads, numberOfThreads, numberOfThreads)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
+    _Values[indexFromCoordinates(id.x, id.y, id.z)] = clamp(_Values[indexFromCoordinates(id.x, id.y, id.z)], 0, 1);
+    
+    //if(id.x == 0 || id.y == 0 || id.z == 0 || id.x == _Size || id.y == _Size || id.z == _Size)
     if (id.x < _Size - 1 && id.y < _Size - 1 && id.z < _Size - 1)
     {
         float cubeValues[8];
@@ -41,6 +49,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         
         for (int i = 0; edges[i] != -1; i += 3)
         {
+            // odczytanie wszystkich krawedzi
             int e00 = edgeConnections[edges[i]][0];
             int e01 = edgeConnections[edges[i]][1];
             int e10 = edgeConnections[edges[i + 1]][0];
@@ -48,12 +57,27 @@ void CSMain(uint3 id : SV_DispatchThreadID)
             int e20 = edgeConnections[edges[i + 2]][0];
             int e21 = edgeConnections[edges[i + 2]][1];
             
+            // obliczenie wierzcholkow trojkata w zaleznosci od wielkosci roznicy wartosci
             Triangle triang;
             triang.a = interpolate(cornerOffsets[e00], cubeValues[e00], cornerOffsets[e01], cubeValues[e01]) + id;
             triang.b = interpolate(cornerOffsets[e10], cubeValues[e10], cornerOffsets[e11], cubeValues[e11]) + id;
-            triang.c = interpolate(cornerOffsets[e20], cubeValues[e20], cornerOffsets[e21], cubeValues[e21]) + id; 
+            triang.c = interpolate(cornerOffsets[e20], cubeValues[e20], cornerOffsets[e21], cubeValues[e21]) + id;
+            
+            // obliczenie mapy UV
+            // trojkat jest obracany w taki sposob aby wektor normalny(prostopadly) tego trojkata wskazany byl na os z+
+            // dzieki temu eliminujemy os z, i mozemy wykorzystac x oraz y do mapowania na teksturze
+            float3 normal = cross(triang.c - triang.a, triang.b - triang.a);
+            float4 rotation = q_inverse(q_look_at(normal, float3(0, 1, 0)));
+
+            triang.auv = rotate_vector(triang.a, rotation).xy;
+            triang.buv = rotate_vector(triang.b, rotation).xy;
+            triang.cuv = rotate_vector(triang.c, rotation).xy;
+            
+            
             _Triangles.Append(triang);
         }
 
     }
 }
+
+

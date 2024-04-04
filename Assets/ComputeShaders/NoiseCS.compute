@@ -14,10 +14,21 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 {
     fnl_state noise = fnlCreateState();
     noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
-    noise.fractal_type = FNL_FRACTAL_PINGPONG;
-    noise.frequency = _Frequency;
+    noise.fractal_type = FNL_FRACTAL_NONE;
     noise.octaves = _Octaves;
     noise.seed = _Seed;
     
-    _Values[indexFromCoordinates(id.x, id.y, id.z)] = fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z);
+    noise.frequency = _Frequency;
+    float temp = fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z)*0.5f;
+    noise.frequency = _Frequency * 2;
+    temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.25f;
+    noise.frequency = _Frequency * 4;
+    temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.25f;
+    
+    temp /= 2;
+    noise.fractal_type = FNL_FRACTAL_RIDGED;
+    noise.frequency = _Frequency;
+    temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.5f;
+    
+    _Values[indexFromCoordinates(id.x, id.y, id.z)] = 1-temp;
 }

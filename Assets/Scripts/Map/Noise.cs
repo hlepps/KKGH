@@ -30,7 +30,7 @@ public class Noise : MonoBehaviour
         
         noiseCS.SetBuffer(0, "_Values", valuesBuffer);
         noiseCS.SetInt("_Size", size);
-        noiseCS.SetFloat("_Frequency", 0.01f);
+        noiseCS.SetFloat("_Frequency", 0.02f);
         noiseCS.SetInt("_Octaves", 1);
         noiseCS.SetInt("_Seed", seed);
         noiseCS.SetInts("_Offset", new int[] {offsetX,offsetY,offsetZ});
