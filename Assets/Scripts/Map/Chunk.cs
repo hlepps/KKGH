@@ -40,13 +40,13 @@ public class Chunk : MonoBehaviour
 
     struct Triangle
     {
-        public float3 a;
-        public float3 b;
-        public float3 c;
+        public Vector3 a;
+        public Vector3 b;
+        public Vector3 c;
 
-        public float2 auv;
-        public float2 buv;
-        public float2 cuv;
+        public Vector2 auv;
+        public Vector2 buv;
+        public Vector2 cuv;
 
         public static int GetSize() { return (sizeof(float) * 3) * 3 + (sizeof(float) * 2) * 3; }
     }
@@ -97,6 +97,8 @@ public class Chunk : MonoBehaviour
         ReleaseBuffers();
     }
 
+    //wczesniejsze uszykowanie tablicy
+    Triangle[] triangles = new Triangle[16384];
     public void GenerateMesh()
     {
         ready = false;
@@ -118,41 +120,46 @@ public class Chunk : MonoBehaviour
         trianglesCountBuffer.GetData(triangleCount);
 
         // pobieranie trójk¹tów
-        Triangle[] triangles = new Triangle[triangleCount[0]];
+        
         trianglesBuffer.GetData(triangles);
 
+
         // w³aœciwe generowanie mesha
+        StartCoroutine(UpdateMeshFromTrianglesAsync());
+    }
+
+    IEnumerator UpdateMeshFromTrianglesAsync()
+    {
+        yield return null;
         UpdateMeshFromTriangles(triangles);
         meshFilter.sharedMesh = currentMesh;
         meshCollider.sharedMesh = currentMesh;
         ready = true;
     }
 
-    Vector3[] vertices;
-    int[] meshTriangles;
-    Vector2[] uv;
-    void UpdateMeshFromTriangles(Triangle[] triangles)
+    Vector3[] vertices = new Vector3[49152];
+    int[] meshTriangles = new int[49152];
+    Vector2[] uv = new Vector2[49152];
+    void UpdateMeshFromTriangles(Triangle[] localTriangles)
     {
-        vertices = new Vector3[triangles.Length * 3];
-        meshTriangles = new int[triangles.Length * 3];
-        uv = new Vector2[vertices.Length];
-        for (int i = 0; i < triangles.Length; i++)
+        for (int i = 0; i < localTriangles.Length; i++)
         {
             int offset = i * 3;
-            vertices[offset] = triangles[i].a;
-            vertices[offset + 1] = triangles[i].b;
-            vertices[offset + 2] = triangles[i].c;
+            vertices[offset] = localTriangles[i].a;
+            vertices[offset + 1] = localTriangles[i].b;
+            vertices[offset + 2] = localTriangles[i].c;
 
             meshTriangles[offset] = offset;
             meshTriangles[offset+1] = offset+1;
             meshTriangles[offset+2] = offset+2;
 
-            uv[offset] = triangles[i].auv;
-            uv[offset+1] = triangles[i].buv;
-            uv[offset+2] = triangles[i].cuv;
+            uv[offset] = localTriangles[i].auv;
+            uv[offset+1] = localTriangles[i].buv;
+            uv[offset+2] = localTriangles[i].cuv;
 
         }
 
+        //Debug.Log($"vertices:{vertices.Length}, meshTriangles:{meshTriangles.Length}, uv:{uv.Length}");
         currentMesh.Clear();
         currentMesh.vertices = vertices;
         currentMesh.triangles = meshTriangles;
