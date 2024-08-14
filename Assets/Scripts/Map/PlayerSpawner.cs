@@ -21,7 +21,7 @@ public class PlayerSpawner : MonoBehaviour
             );
 
         Debug.Log($"Spawn:{spawnPos}");
-        map.ModifyCircle(spawnPos, 5, -1);
+        map.ModifyCircle(spawnPos, 5, -0.5f);
         playerObject.transform.position = spawnPos;
     }
 

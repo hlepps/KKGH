@@ -73,8 +73,17 @@ public class Map : MonoBehaviour
     IEnumerator GenerateChunk(Chunk chunk, int x, int y, int z)
     {
         yield return null;
-        float[] values = noise.GetNoiseValues((x * defaultChunk.GetSize())-x, (y * defaultChunk.GetSize())-y, (z * defaultChunk.GetSize())-z);
-        chunk.InitChunk(values, new uint3((uint)x, (uint)y, (uint)z));
+        float[] values;
+        float[] texturemap;
+        if (mapChunkSize.y - 1 == y)
+        {
+            (values, texturemap) = noise.GetSurfaceValues((x * defaultChunk.GetSize()) - x, (y * defaultChunk.GetSize()) - y, (z * defaultChunk.GetSize()) - z);
+        }
+        else
+        {
+            (values, texturemap) = noise.GetNoiseValues((x * defaultChunk.GetSize()) - x, (y * defaultChunk.GetSize()) - y, (z * defaultChunk.GetSize()) - z);
+        } 
+        chunk.InitChunk(values, new uint3((uint)x, (uint)y, (uint)z), texturemap);
 
     }
 

@@ -6,6 +6,7 @@ using UnityEngine;
 using System;
 using System.Linq;
 using UnityEditor.ShaderGraph.Internal;
+using UnityEngine.Rendering;
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
@@ -24,6 +25,9 @@ public class Chunk : MonoBehaviour
     public int GetSize() { return size; }
     [SerializeField] int numberOfThreads = 8;
 
+    float colliderCalculationDelay = 0.1f;
+    float colliderCalculationTimer = 0.0f;
+
     bool ready = false;
     public bool IsReady() { return ready; }
 
@@ -31,12 +35,15 @@ public class Chunk : MonoBehaviour
     Mesh currentMesh;
     MeshCollider meshCollider;
 
-    [SerializeField] float[] values;
+    float[] values;
+    float[] texturemap;
 
     [SerializeField] ChunkBox chunkBox;
     public ChunkBox GetChunkBox() { return chunkBox; }
 
     [SerializeField] bool showDebugValues;
+
+    Material material;
 
     struct Triangle
     {
@@ -51,11 +58,13 @@ public class Chunk : MonoBehaviour
         public static int GetSize() { return (sizeof(float) * 3) * 3 + (sizeof(float) * 2) * 3; }
     }
 
-    public void InitChunk(float[] newvalues, uint3 chunkID)
+    public void InitChunk(float[] newvalues, uint3 chunkID, float[] newTexturemap)
     {
         id = chunkID;
         values = new float[size * size * size];
         Array.Copy(newvalues, values, newvalues.Count());
+        texturemap = new float[size * size * size];
+        Array.Copy(newTexturemap, texturemap, newTexturemap.Count());
         GenerateMesh();
     }
 
@@ -65,6 +74,7 @@ public class Chunk : MonoBehaviour
         meshCollider = GetComponent<MeshCollider>();
 
         currentMesh = new Mesh();
+        material = GetComponent<MeshRenderer>().material;
     }
     private void InitBuffers()
     {
@@ -99,6 +109,7 @@ public class Chunk : MonoBehaviour
 
     //wczesniejsze uszykowanie tablicy
     Triangle[] triangles = new Triangle[16384];
+    Texture3D floatData;
     public void GenerateMesh()
     {
         ready = false;
@@ -120,22 +131,37 @@ public class Chunk : MonoBehaviour
         trianglesCountBuffer.GetData(triangleCount);
 
         // pobieranie trójk¹tów
-        
         trianglesBuffer.GetData(triangles);
 
 
         // w³aœciwe generowanie mesha
-        StartCoroutine(UpdateMeshFromTrianglesAsync());
-    }
-
-    IEnumerator UpdateMeshFromTrianglesAsync()
-    {
-        yield return null;
         UpdateMeshFromTriangles(triangles);
         meshFilter.sharedMesh = currentMesh;
-        meshCollider.sharedMesh = currentMesh;
         ready = true;
+
+        // update kolizji po jeœli mo¿na
+        if(colliderCalculationTimer <= 0)
+            StartCoroutine(UpdateCollisionDataAsync());
+
+        // update danych do shadera terenu
+        floatData = new Texture3D(32, 32, 32, TextureFormat.RFloat, 1);
+        floatData.SetPixelData(texturemap,0);
+        floatData.Apply();
+        material.SetTexture("_FloatData", floatData);
     }
+
+    // kolizja osobno z opóŸnieniem w celu przyspieszenia dzialania
+    IEnumerator UpdateCollisionDataAsync()
+    {
+        colliderCalculationTimer = colliderCalculationDelay;
+        meshCollider.sharedMesh = currentMesh;
+        while (colliderCalculationTimer > 0)
+        {
+            colliderCalculationTimer -= Time.deltaTime;
+            yield return null;
+        }
+    }
+
 
     Vector3[] vertices = new Vector3[49152];
     int[] meshTriangles = new int[49152];

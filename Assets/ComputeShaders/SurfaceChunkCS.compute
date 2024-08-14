@@ -1,0 +1,59 @@
+#pragma kernel CSMain
+#include "OpenSource/FastNoiseLite.hlsl"
+#include "Common.hlsl"
+
+float _Frequency;
+int _Octaves;
+int _Seed;
+int3 _Offset;
+
+RWStructuredBuffer<float> _Values;
+
+[numthreads(numberOfThreads, numberOfThreads, numberOfThreads)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    fnl_state noise = fnlCreateState();
+    noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
+    noise.fractal_type = FNL_FRACTAL_NONE;
+    noise.octaves = _Octaves;
+    noise.seed = _Seed;
+    
+    noise.frequency = _Frequency / 4;
+    float check = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.62f;
+    noise.frequency = _Frequency / 2;
+    check += fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.30f;
+    noise.frequency = _Frequency;
+    check += fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.05f;
+    noise.frequency = _Frequency * 8;
+    check += fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.02f;
+    
+    check = clamp(check, 0.05, 1);
+    
+    if (id.y > check * 32)
+    {
+        _Values[indexFromCoordinates(id.x, id.y, id.z)] = 0.4;
+    }
+    else
+    {
+        noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
+        noise.fractal_type = FNL_FRACTAL_NONE;
+        noise.octaves = _Octaves;
+        noise.seed = _Seed;
+        
+        noise.frequency = _Frequency;
+        float temp = fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.5f;
+        noise.frequency = _Frequency * 2;
+        temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.25f;
+        noise.frequency = _Frequency * 4;
+        temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.25f;
+    
+        temp /= 2;
+        noise.fractal_type = FNL_FRACTAL_RIDGED;
+        noise.frequency = _Frequency;
+        temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.5f;
+    
+        _Values[indexFromCoordinates(id.x, id.y, id.z)] = 1 - temp;
+    }
+}
+        
+
