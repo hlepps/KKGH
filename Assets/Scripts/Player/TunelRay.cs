@@ -35,6 +35,7 @@ public class TunelRay : MonoBehaviour
                 {
                     indicator.SetActive(true);
                     indicator.transform.position = hitinfo.point;
+                    indicator.transform.localScale = Vector3.one * radius;
                     Map.GetInstance().ModifyCircle(hitinfo.point, radius, realchange);
                 }
                 else
@@ -45,5 +46,9 @@ public class TunelRay : MonoBehaviour
             else
                 delayCounter -= Time.deltaTime;
         }
+        else
+        {
+            indicator.SetActive(false);
+        }    
     }
 }

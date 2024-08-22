@@ -8,6 +8,7 @@ int _Seed;
 int3 _Offset;
 
 RWStructuredBuffer<float> _Values;
+RWStructuredBuffer<float> _TextureMap;
 
 [numthreads(numberOfThreads, numberOfThreads, numberOfThreads)]
 void CSMain (uint3 id : SV_DispatchThreadID)

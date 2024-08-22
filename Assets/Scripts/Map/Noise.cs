@@ -9,6 +9,7 @@ public class Noise : MonoBehaviour
     [SerializeField] ComputeShader noiseCS;
     [SerializeField] ComputeShader surfaceCS;
     ComputeBuffer valuesBuffer;
+    ComputeBuffer textureMapBuffer;
 
     [SerializeField] int size = 16;
     [SerializeField] int numberOfThreads = 8;
@@ -17,12 +18,15 @@ public class Noise : MonoBehaviour
     private void OnEnable()
     {
         valuesBuffer = new ComputeBuffer(size * size * size, sizeof(float));
+        textureMapBuffer = new ComputeBuffer(size * size * size, sizeof(float));
     }
 
     private void OnDisable()
     {
         valuesBuffer.Release();
         valuesBuffer = null;
+        textureMapBuffer.Release();
+        textureMapBuffer = null;
     }
 
     public (float[] noise, float[] layers) GetNoiseValues(int offsetX, int offsetY, int offsetZ, int seed = 1170)
@@ -31,35 +35,41 @@ public class Noise : MonoBehaviour
         float[] layersValues = new float[size * size * size];
         
         noiseCS.SetBuffer(0, "_Values", valuesBuffer);
+        noiseCS.SetBuffer(0, "_TextureMap", textureMapBuffer);
         noiseCS.SetInt("_Size", size);
         noiseCS.SetFloat("_Frequency", 0.02f);
         noiseCS.SetInt("_Octaves", 1);
         noiseCS.SetInt("_Seed", seed);
         noiseCS.SetInts("_Offset", new int[] {offsetX,offsetY,offsetZ});
+
         int dispatch = size / numberOfThreads;
         noiseCS.Dispatch(0, dispatch, dispatch, dispatch);
+
         valuesBuffer.GetData(noiseValues);
-        
-        noiseCS.SetFloat("_Frequency", 0.02f);
-        noiseCS.SetInt("_Seed", seed*seed);
-        noiseCS.Dispatch(0, dispatch, dispatch, dispatch);
-        valuesBuffer.GetData(layersValues);
+        textureMapBuffer.GetData(layersValues);
 
         return (noiseValues, layersValues);
     }
-    public (float[] noise, float[] layers) GetSurfaceValues(int offsetX, int offsetY, int offsetZ, int seed = 1170)
+    public (float[] noise, float[] layers) GetSurfaceValues(int offsetX, int offsetY, int offsetZ, bool isSurface, int seed = 1170)
     {
-        float[] values = new float[size * size * size];
+        float[] noiseValues = new float[size * size * size];
+        float[] layersValues = new float[size * size * size];
 
         surfaceCS.SetBuffer(0, "_Values", valuesBuffer);
+        surfaceCS.SetBuffer(0, "_TextureMap", textureMapBuffer);
         surfaceCS.SetInt("_Size", size);
         surfaceCS.SetFloat("_Frequency", 0.02f);
         surfaceCS.SetInt("_Octaves", 1);
         surfaceCS.SetInt("_Seed", seed);
         surfaceCS.SetInts("_Offset", new int[] {offsetX,offsetY,offsetZ });
+        surfaceCS.SetBool("_SurfaceLevel", isSurface);
+
         int dispatch = size / numberOfThreads;
         surfaceCS.Dispatch(0, dispatch, dispatch, dispatch);
-        valuesBuffer.GetData(values);
-        return (values, Enumerable.Repeat(2f, size*size*size).ToArray());
+
+        valuesBuffer.GetData(noiseValues);
+        textureMapBuffer.GetData(layersValues); 
+
+        return (noiseValues, layersValues);
     }
 }

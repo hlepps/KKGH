@@ -7,7 +7,10 @@ int _Octaves;
 int _Seed;
 int3 _Offset;
 
+bool _SurfaceLevel;
+
 RWStructuredBuffer<float> _Values;
+RWStructuredBuffer<float> _TextureMap;
 
 [numthreads(numberOfThreads, numberOfThreads, numberOfThreads)]
 void CSMain (uint3 id : SV_DispatchThreadID)
@@ -27,11 +30,16 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     noise.frequency = _Frequency * 8;
     check += fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.02f;
     
-    check = clamp(check, 0.05, 1);
+    check += 1 - ((id.y - 0) / 16.0);
+    check += 0.4;
+    check = clamp(check, 0, 1);
+
+    //_Values[indexFromCoordinates(id.x, id.y, id.z)] = check;
     
-    if (id.y > check * 32)
+    if (check < 0.6 && _SurfaceLevel)
     {
-        _Values[indexFromCoordinates(id.x, id.y, id.z)] = 0.4;
+        _Values[indexFromCoordinates(id.x, id.y, id.z)] = check;
+        _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 2;
     }
     else
     {
@@ -53,7 +61,34 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.5f;
     
         _Values[indexFromCoordinates(id.x, id.y, id.z)] = 1 - temp;
+        
+        _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 0;
+        /*
+        if(_SurfaceLevel)
+        {
+            if (temp < 0.55)
+            {
+                _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 2;
+            }
+            else
+            {
+                _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 0;
+            }
+        }
+        else
+        {
+            if (temp < 0.55)
+            {
+                _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 1;
+            }
+            else
+            {
+                _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 0;
+            }
+        }
+        */
     }
+
 }
         
 

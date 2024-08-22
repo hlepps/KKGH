@@ -75,14 +75,12 @@ public class Map : MonoBehaviour
         yield return null;
         float[] values;
         float[] texturemap;
-        if (mapChunkSize.y - 1 == y)
-        {
-            (values, texturemap) = noise.GetSurfaceValues((x * defaultChunk.GetSize()) - x, (y * defaultChunk.GetSize()) - y, (z * defaultChunk.GetSize()) - z);
-        }
-        else
-        {
-            (values, texturemap) = noise.GetNoiseValues((x * defaultChunk.GetSize()) - x, (y * defaultChunk.GetSize()) - y, (z * defaultChunk.GetSize()) - z);
-        } 
+        (values, texturemap) = noise.GetSurfaceValues(
+            (x * defaultChunk.GetSize()) - x,
+            (y * defaultChunk.GetSize()) - y,
+            (z * defaultChunk.GetSize()) - z,
+            (mapChunkSize.y - 1 == y));
+        
         chunk.InitChunk(values, new uint3((uint)x, (uint)y, (uint)z), texturemap);
 
     }
