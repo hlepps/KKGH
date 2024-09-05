@@ -25,7 +25,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         // test
         _Values[indexFromCoordinates(id.x, id.y, id.z)] = 
         clamp(_Values[indexFromCoordinates(id.x, id.y, id.z)] + 
-        (_Change * (2 * _Values[indexFromCoordinates(id.x, id.y, id.z)] * _Values[indexFromCoordinates(id.x, id.y, id.z)] - 2 * _Values[indexFromCoordinates(id.x, id.y, id.z)] + 1)),
+        (_Change * (16 * _Values[indexFromCoordinates(id.x, id.y, id.z)] * _Values[indexFromCoordinates(id.x, id.y, id.z)] - 16 * _Values[indexFromCoordinates(id.x, id.y, id.z)] + 4.1))
+        * (1 - (temp / _CircleRadius)),
         0, 1);
         
 

@@ -11,7 +11,7 @@ public class Noise : MonoBehaviour
     ComputeBuffer valuesBuffer;
     ComputeBuffer textureMapBuffer;
 
-    [SerializeField] int size = 16;
+    [SerializeField] int size = 32;
     [SerializeField] int numberOfThreads = 8;
     public int GetSize() { return size; }
 
@@ -50,7 +50,7 @@ public class Noise : MonoBehaviour
 
         return (noiseValues, layersValues);
     }
-    public (float[] noise, float[] layers) GetSurfaceValues(int offsetX, int offsetY, int offsetZ, bool isSurface, int seed = 1170)
+    public (float[] noise, float[] layers) GetSurfaceValues(int3 offset, bool isSurface, int3 mapsize, int seed = 1170)
     {
         float[] noiseValues = new float[size * size * size];
         float[] layersValues = new float[size * size * size];
@@ -61,7 +61,8 @@ public class Noise : MonoBehaviour
         surfaceCS.SetFloat("_Frequency", 0.02f);
         surfaceCS.SetInt("_Octaves", 1);
         surfaceCS.SetInt("_Seed", seed);
-        surfaceCS.SetInts("_Offset", new int[] {offsetX,offsetY,offsetZ });
+        surfaceCS.SetInts("_Offset", new int[] {offset.x, offset.y, offset.z });
+        surfaceCS.SetInts("_MapSize", new int[] {mapsize.x, mapsize.y, mapsize.z });
         surfaceCS.SetBool("_SurfaceLevel", isSurface);
 
         int dispatch = size / numberOfThreads;

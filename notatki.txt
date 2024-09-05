@@ -1,0 +1,1 @@
+edycja sferą ma wzór aby skrajne wartości szybko przybliżyć i im dalej od środka tym mniejsza moc

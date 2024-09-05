@@ -19,8 +19,8 @@ public class Map : MonoBehaviour
     {
         return new uint3(
             mapChunkSize.x * (uint)defaultChunk.GetSize(),
-            mapChunkSize.x * (uint)defaultChunk.GetSize(),
-            mapChunkSize.x * (uint)defaultChunk.GetSize()); 
+            mapChunkSize.y * (uint)defaultChunk.GetSize(),
+            mapChunkSize.z * (uint)defaultChunk.GetSize()); 
     }
     public GameObject GetChunkObject(int x, int y, int z)
     {
@@ -76,10 +76,12 @@ public class Map : MonoBehaviour
         float[] values;
         float[] texturemap;
         (values, texturemap) = noise.GetSurfaceValues(
-            (x * defaultChunk.GetSize()) - x,
+            new int3((x * defaultChunk.GetSize()) - x,
             (y * defaultChunk.GetSize()) - y,
-            (z * defaultChunk.GetSize()) - z,
-            (mapChunkSize.y - 1 == y));
+            (z * defaultChunk.GetSize()) - z),
+            (mapChunkSize.y - 1 == y),
+            (int3)GetMapSize());
+        Debug.Log(GetMapSize());
         
         chunk.InitChunk(values, new uint3((uint)x, (uint)y, (uint)z), texturemap);
 

@@ -207,7 +207,6 @@ public class Chunk : MonoBehaviour
         currentMesh.triangles = meshTriangles;
         currentMesh.uv = uv;
         currentMesh.RecalculateNormals();
-        currentMesh.RecalculateNormals();
     }
 
     /// <summary>
@@ -241,7 +240,7 @@ public class Chunk : MonoBehaviour
         Array.ForEach(lastColorCount, delegate (int i) { sum += i; });
 
         int l = UnityEngine.Random.Range(0, sum + 1);
-        Debug.Log($"Sum:{sum}, random:{l}");
+        //Debug.Log($"Sum:{sum}, random:{l}");
         int found = 0;
 
         //string ahh = "";

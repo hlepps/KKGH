@@ -6,6 +6,7 @@ float _Frequency;
 int _Octaves;
 int _Seed;
 int3 _Offset;
+int3 _MapSize;
 
 bool _SurfaceLevel;
 
@@ -38,55 +39,49 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     
     if (check < 0.6 && _SurfaceLevel)
     {
-        _Values[indexFromCoordinates(id.x, id.y, id.z)] = check;
-        _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 2;
-    }
-    else
-    {
-        noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
-        noise.fractal_type = FNL_FRACTAL_NONE;
-        noise.octaves = _Octaves;
-        noise.seed = _Seed;
-        
-        noise.frequency = _Frequency;
-        float temp = fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.5f;
-        noise.frequency = _Frequency * 2;
-        temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.25f;
-        noise.frequency = _Frequency * 4;
-        temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.25f;
-    
-        temp /= 2;
-        noise.fractal_type = FNL_FRACTAL_RIDGED;
-        noise.frequency = _Frequency;
-        temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.5f;
-    
-        _Values[indexFromCoordinates(id.x, id.y, id.z)] = 1 - temp;
-        
-        _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 0;
-        /*
-        if(_SurfaceLevel)
+        if (_Offset.x + id.x == 0 || _Offset.z + id.z == 0 ||
+            _Offset.x + id.x == _MapSize.x - _MapSize.x / 32 || _Offset.z + id.z == _MapSize.z - _MapSize.z / 32)
         {
-            if (temp < 0.55)
-            {
-                _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 2;
-            }
-            else
-            {
-                _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 0;
-            }
+            _Values[indexFromCoordinates(id.x, id.y, id.z)] = 0;
         }
         else
         {
-            if (temp < 0.55)
-            {
-                _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 1;
-            }
-            else
-            {
-                _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 0;
-            }
+            _Values[indexFromCoordinates(id.x, id.y, id.z)] = check;
         }
-        */
+        
+        _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 2;
+    }
+    else
+    {   
+        
+        if (_Offset.x + id.x == 0 || _Offset.y + id.y == 0 || _Offset.z + id.z == 0  ||
+            _Offset.x + id.x == _MapSize.x - _MapSize.x / 32 || _Offset.z + id.z == _MapSize.z - _MapSize.z / 32)
+        {
+            _Values[indexFromCoordinates(id.x, id.y, id.z)] = 0;
+        }
+        else
+        {
+            noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
+            noise.fractal_type = FNL_FRACTAL_NONE;
+            noise.octaves = _Octaves;
+            noise.seed = _Seed;
+            
+            noise.frequency = _Frequency;
+            float temp = fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.5f;
+            noise.frequency = _Frequency * 2;
+            temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.25f;
+            noise.frequency = _Frequency * 4;
+            temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.25f;
+            
+            temp /= 2;
+            noise.fractal_type = FNL_FRACTAL_RIDGED;
+            noise.frequency = _Frequency;
+            temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.5f;
+            
+            _Values[indexFromCoordinates(id.x, id.y, id.z)] = 1 - temp;
+        }
+        
+        _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 0;
     }
 
 }

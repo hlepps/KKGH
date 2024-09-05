@@ -48,17 +48,25 @@ public class TunelRay : MonoBehaviour
                 Ray ray = new Ray(transform.position, transform.forward);
                 if (Physics.Raycast(ray, out RaycastHit hitinfo, 100, LayerMask.GetMask("Chunk")))
                 {
-                    indicator.SetActive(true);
+                    if (Vector3.Distance(transform.position, hitinfo.point) > 1)
+                    {
+                        indicator.SetActive(true);
 
-                    if (realchange > 0)
-                        gun.StartParticleSystem();
+                        if (realchange > 0)
+                            gun.StartParticleSystem();
+                        else
+                            gun.StartParticleSystemReversed();
+
+                        indicator.transform.position = hitinfo.point;
+                        indicator.transform.localScale = Vector3.one * radius;
+                        indicator.transform.LookAt(this.transform.position);
+                        Map.GetInstance().ModifyCircle(hitinfo.point, radius, realchange);
+                    }
                     else
-                        gun.StartParticleSystemReversed();
-
-                    indicator.transform.position = hitinfo.point;
-                    indicator.transform.localScale = Vector3.one * radius;
-                    indicator.transform.LookAt(this.transform.position);
-                    Map.GetInstance().ModifyCircle(hitinfo.point, radius, realchange);
+                    {
+                        gun.StopParticleSystem();
+                        indicator.SetActive(false);
+                    }
                 }
                 else
                 {
