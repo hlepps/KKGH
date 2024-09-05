@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using UnityEditor.ShaderGraph.Internal;
 using UnityEngine.Rendering;
+using Unity.Burst.Intrinsics;
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
@@ -20,7 +21,8 @@ public class Chunk : MonoBehaviour
     ComputeBuffer trianglesBuffer;
     ComputeBuffer trianglesCountBuffer;
     ComputeBuffer valuesBuffer;
-
+    ComputeBuffer textureMapBuffer;
+    ComputeBuffer colorCountBuffer;
     [SerializeField] int size = 16;
     public int GetSize() { return size; }
     [SerializeField] int numberOfThreads = 8;
@@ -37,6 +39,7 @@ public class Chunk : MonoBehaviour
 
     float[] values;
     float[] texturemap;
+    public int[] lastColorCount { get; private set; }
 
     [SerializeField] ChunkBox chunkBox;
     public ChunkBox GetChunkBox() { return chunkBox; }
@@ -65,6 +68,7 @@ public class Chunk : MonoBehaviour
         Array.Copy(newvalues, values, newvalues.Count());
         texturemap = new float[size * size * size];
         Array.Copy(newTexturemap, texturemap, newTexturemap.Count());
+        lastColorCount = new int[32];
         GenerateMesh();
     }
 
@@ -81,6 +85,8 @@ public class Chunk : MonoBehaviour
         trianglesBuffer = new ComputeBuffer(5 * (size * size * size), Triangle.GetSize(), ComputeBufferType.Append);
         trianglesCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
         valuesBuffer = new ComputeBuffer(size * size * size, sizeof(float));
+        textureMapBuffer = new ComputeBuffer(size * size * size, sizeof(float));
+        colorCountBuffer = new ComputeBuffer(32, sizeof(int));
     }
 
     private void ReleaseBuffers()
@@ -88,12 +94,22 @@ public class Chunk : MonoBehaviour
         if (trianglesBuffer != null)
             trianglesBuffer.Release();
         trianglesBuffer = null;
+
         if (trianglesCountBuffer != null)
             trianglesCountBuffer.Release();
         trianglesCountBuffer = null;
+
         if (valuesBuffer != null)
             valuesBuffer.Release();
         valuesBuffer = null;
+
+        if (textureMapBuffer != null)
+            textureMapBuffer.Release();
+        textureMapBuffer = null;
+
+        if (colorCountBuffer != null)
+            colorCountBuffer.Release();
+        colorCountBuffer = null;
     }
 
     private void OnEnable()
@@ -203,18 +219,54 @@ public class Chunk : MonoBehaviour
     public void ModifyCircle(Vector3 center, float radius, float change)
     {
         updateChunkCS.SetBuffer(0, "_Values", valuesBuffer);
+        updateChunkCS.SetBuffer(0, "_TextureMap", textureMapBuffer);
+        updateChunkCS.SetBuffer(0, "_ColorCount", colorCountBuffer);
         updateChunkCS.SetFloats("_CirclePosition", new float[] { center.x,center.y,center.z });
         updateChunkCS.SetFloat("_CircleRadius", radius);
         updateChunkCS.SetFloat("_Change", change);
         updateChunkCS.SetInt("_Size", size);
 
+        textureMapBuffer.SetData(texturemap);
+
+
         int dispatch = size / numberOfThreads;
         updateChunkCS.Dispatch(0, dispatch, dispatch, dispatch);
+        circlecenterdebug = center;
         valuesBuffer.GetData(values);
 
+
+        colorCountBuffer.GetData(lastColorCount);
+
+        int sum = 0;
+        Array.ForEach(lastColorCount, delegate (int i) { sum += i; });
+
+        int l = UnityEngine.Random.Range(0, sum + 1);
+        Debug.Log($"Sum:{sum}, random:{l}");
+        int found = 0;
+
+        //string ahh = "";
+
+        for (int i = 0; i < lastColorCount.Length; i++)
+        {
+            //ahh += $"|{lastColorCount[i]}";
+
+            if (l <= lastColorCount[i])
+            {
+                found = i;
+            }
+            else
+            {
+                l -= lastColorCount[i];
+            }
+        }
+        Gun.Instance.SetColor(found);
+        //Debug.Log(ahh);
+        colorCountBuffer.SetData(new int[32]);
+
+
         GenerateMesh();
-        circlecenterdebug = center;
     }
+
 
     Vector3 circlecenterdebug;
 

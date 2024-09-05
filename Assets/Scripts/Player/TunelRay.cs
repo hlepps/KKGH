@@ -9,11 +9,26 @@ public class TunelRay : MonoBehaviour
     [SerializeField] float radius = 2f;
     [SerializeField] float change = -0.1f/30f;
     [SerializeField] float delay = 1f/15f;
+    [SerializeField] float scrollSpeed = 1f;
+    [SerializeField] Gun gun;
+
     float delayCounter;
+
     private void Update()
     {
         bool edit = false;
         float realchange = 0;
+
+        float wheel = Input.GetAxis("Mouse ScrollWheel");
+        if (wheel != 0)
+        {
+            edit = true;
+            realchange = 0;
+            radius += wheel * Time.deltaTime * scrollSpeed * (1f/Mathf.Sqrt(radius/2f));
+            radius = Mathf.Clamp(radius, 0.5f, 10f);
+            gun.SetRate(radius * 25);
+        }
+
         if(Input.GetMouseButton(0))
         {
             edit = true;
@@ -34,13 +49,21 @@ public class TunelRay : MonoBehaviour
                 if (Physics.Raycast(ray, out RaycastHit hitinfo, 100, LayerMask.GetMask("Chunk")))
                 {
                     indicator.SetActive(true);
+
+                    if (realchange > 0)
+                        gun.StartParticleSystem();
+                    else
+                        gun.StartParticleSystemReversed();
+
                     indicator.transform.position = hitinfo.point;
                     indicator.transform.localScale = Vector3.one * radius;
+                    indicator.transform.LookAt(this.transform.position);
                     Map.GetInstance().ModifyCircle(hitinfo.point, radius, realchange);
                 }
                 else
                 {
                     indicator.SetActive(false);
+                    gun.StopParticleSystem();
                 }
             }
             else
@@ -49,6 +72,7 @@ public class TunelRay : MonoBehaviour
         else
         {
             indicator.SetActive(false);
+            gun.StopParticleSystem();
         }    
     }
 }

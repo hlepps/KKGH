@@ -17,7 +17,7 @@ TagManager:
   - Checker
   - Player
   - DontCollideWithPlayer
-  - 
+  - PriorityCamera
   - 
   - 
   - 

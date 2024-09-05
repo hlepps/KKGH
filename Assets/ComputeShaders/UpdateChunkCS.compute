@@ -2,6 +2,8 @@
 #include "Common.hlsl"
 
 RWStructuredBuffer<float> _Values;
+RWStructuredBuffer<float> _TextureMap;
+RWStructuredBuffer<int> _ColorCount;
 
 float3 _CirclePosition;
 float _CircleRadius;
@@ -25,6 +27,10 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         clamp(_Values[indexFromCoordinates(id.x, id.y, id.z)] + 
         (_Change * (2 * _Values[indexFromCoordinates(id.x, id.y, id.z)] * _Values[indexFromCoordinates(id.x, id.y, id.z)] - 2 * _Values[indexFromCoordinates(id.x, id.y, id.z)] + 1)),
         0, 1);
+        
+
+        _ColorCount[(int) _TextureMap[indexFromCoordinates(id.x, id.y, id.z)]] += 1;
+
     }
 
 }
