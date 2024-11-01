@@ -15,7 +15,7 @@ using Unity.Burst.Intrinsics;
 public class Chunk : MonoBehaviour
 {
     uint3 id;
-    public uint3 GetID() {  return id; }
+    public uint3 GetID() { return id; }
     [SerializeField] ComputeShader chunkCS;
     [SerializeField] ComputeShader updateChunkCS;
     ComputeBuffer trianglesBuffer;
@@ -45,6 +45,7 @@ public class Chunk : MonoBehaviour
     public ChunkBox GetChunkBox() { return chunkBox; }
 
     [SerializeField] bool showDebugValues;
+    [SerializeField] bool showDebugNormals;
 
     Material material;
 
@@ -143,7 +144,7 @@ public class Chunk : MonoBehaviour
         // pobieranie iloœci trójk¹tów
         // zwyk³e .count podaje maksymalny capacity nie aktualn¹ liczbê
         int[] triangleCount = { 0 };
-        ComputeBuffer.CopyCount(trianglesBuffer, trianglesCountBuffer,0);
+        ComputeBuffer.CopyCount(trianglesBuffer, trianglesCountBuffer, 0);
         trianglesCountBuffer.GetData(triangleCount);
 
         // pobieranie trójk¹tów
@@ -156,12 +157,12 @@ public class Chunk : MonoBehaviour
         ready = true;
 
         // update kolizji po jeœli mo¿na
-        if(colliderCalculationTimer <= 0)
+        if (colliderCalculationTimer <= 0)
             StartCoroutine(UpdateCollisionDataAsync());
 
         // update danych do shadera terenu
         floatData = new Texture3D(32, 32, 32, TextureFormat.RFloat, 1);
-        floatData.SetPixelData(texturemap,0);
+        floatData.SetPixelData(texturemap, 0);
         floatData.Apply();
         material.SetTexture("_FloatData", floatData);
     }
@@ -178,7 +179,7 @@ public class Chunk : MonoBehaviour
         }
     }
 
-
+    float timeLastUpdated = 0;
     Vector3[] vertices = new Vector3[49152];
     int[] meshTriangles = new int[49152];
     Vector2[] uv = new Vector2[49152];
@@ -192,12 +193,12 @@ public class Chunk : MonoBehaviour
             vertices[offset + 2] = localTriangles[i].c;
 
             meshTriangles[offset] = offset;
-            meshTriangles[offset+1] = offset+1;
-            meshTriangles[offset+2] = offset+2;
+            meshTriangles[offset + 1] = offset + 1;
+            meshTriangles[offset + 2] = offset + 2;
 
             uv[offset] = localTriangles[i].auv;
-            uv[offset+1] = localTriangles[i].buv;
-            uv[offset+2] = localTriangles[i].cuv;
+            uv[offset + 1] = localTriangles[i].buv;
+            uv[offset + 2] = localTriangles[i].cuv;
 
         }
 
@@ -206,7 +207,13 @@ public class Chunk : MonoBehaviour
         currentMesh.vertices = vertices;
         currentMesh.triangles = meshTriangles;
         currentMesh.uv = uv;
-        currentMesh.RecalculateNormals();
+
+        if(Math.Abs(timeLastUpdated - Time.time) > 1)
+        {
+            currentMesh.RecalculateNormals();
+            currentMesh.normals = CustomNormalRecalculate.Recalculate(currentMesh.vertices, currentMesh.normals);
+            timeLastUpdated = Time.time;
+        }
     }
 
     /// <summary>
@@ -220,7 +227,7 @@ public class Chunk : MonoBehaviour
         updateChunkCS.SetBuffer(0, "_Values", valuesBuffer);
         updateChunkCS.SetBuffer(0, "_TextureMap", textureMapBuffer);
         updateChunkCS.SetBuffer(0, "_ColorCount", colorCountBuffer);
-        updateChunkCS.SetFloats("_CirclePosition", new float[] { center.x,center.y,center.z });
+        updateChunkCS.SetFloats("_CirclePosition", new float[] { center.x, center.y, center.z });
         updateChunkCS.SetFloat("_CircleRadius", radius);
         updateChunkCS.SetFloat("_Change", change);
         updateChunkCS.SetInt("_Size", size);
@@ -273,24 +280,53 @@ public class Chunk : MonoBehaviour
     {
     }
 
+    float gizmosTimer = 0;
     private void OnDrawGizmosSelected()
     {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawSphere(transform.position + circlecenterdebug, 5);
-        if(showDebugValues)
+        if (gizmosTimer < 0)
         {
-            for(int x = 0; x < size; x++)
+            gizmosTimer = -1;
+            //Gizmos.color = Color.yellow;
+            //Gizmos.DrawSphere(transform.position + circlecenterdebug, 5);
+            if (showDebugValues)
             {
-                for(int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
                 {
-                    for(int z = 0; z < size; z++)
+                    for (int y = 0; y < size; y++)
                     {
-                        float val = values[x + size * (y + size * z)];
-                        Gizmos.color = new Color(val,val,val);
-                        Gizmos.DrawSphere(transform.position + new Vector3(x, y, z), 0.2f);
+                        for (int z = 0; z < size; z++)
+                        {
+                            float val = values[x + size * (y + size * z)];
+                            Gizmos.color = new Color(val, val, val);
+                            Gizmos.DrawSphere(transform.position + new Vector3(x, y, z), 0.2f);
+                        }
                     }
                 }
             }
+            if (showDebugNormals)
+            {
+                for (int x = 4; x < 5; x++)
+                {
+                    for (int y = 4; y < 5; y++)
+                    {
+                        for (int z = 4; z < 5; z++)
+                        {
+                            if (true)
+                            {
+                                Vector3 point = currentMesh.vertices[x + size * (y + size * z)];
+                                Vector3 target = currentMesh.normals[x + size * (y + size * z)];
+                                Gizmos.color = new Color(target.x, target.y, target.z);
+                                Gizmos.DrawLine(transform.position + point, transform.position + point + target);
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
+        else
+        {
+            gizmosTimer -= Time.deltaTime;
         }
     }
 }

@@ -81,7 +81,7 @@ public class Map : MonoBehaviour
             (z * defaultChunk.GetSize()) - z),
             (mapChunkSize.y - 1 == y),
             (int3)GetMapSize());
-        Debug.Log(GetMapSize());
+        //Debug.Log(GetMapSize());
         
         chunk.InitChunk(values, new uint3((uint)x, (uint)y, (uint)z), texturemap);
 
