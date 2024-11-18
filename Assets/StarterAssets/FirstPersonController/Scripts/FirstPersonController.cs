@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -115,6 +116,7 @@ namespace StarterAssets
 			JumpAndGravity();
 			GroundedCheck();
 			Move();
+			ManageSounds();
 		}
 
 		private void LateUpdate()
@@ -150,6 +152,7 @@ namespace StarterAssets
 				transform.Rotate(Vector3.up * _rotationVelocity);
 			}
 		}
+
 
 		private void Move()
 		{
@@ -252,6 +255,64 @@ namespace StarterAssets
 			if (lfAngle > 360f) lfAngle -= 360f;
 			return Mathf.Clamp(lfAngle, lfMin, lfMax);
 		}
+
+        [Header("Audio")]
+        [SerializeField] AudioSource StepSounds;
+        [SerializeField] AudioSource BreathingSounds;
+        [SerializeField] AudioSource ImpactSource;
+        [SerializeField] List<AudioClip> JumpSounds = new();
+        [SerializeField] List<AudioClip> StompSounds = new();
+
+		float finalStepVolume = 0;
+		bool lastWasGrounded;
+        private void ManageSounds()
+		{
+			float stepLerpSpeed = Time.deltaTime * 10f;
+			float breathLerpSpeed = Time.deltaTime * 0.1f;
+			if(_input.move.magnitude > 0.1f)
+			{
+                finalStepVolume = Mathf.Lerp(finalStepVolume, 0.05f, stepLerpSpeed);
+                if (_input.sprint)
+				{
+					StepSounds.pitch = Mathf.Lerp(StepSounds.pitch, 1.7f, stepLerpSpeed);
+                    BreathingSounds.volume = Mathf.Lerp(BreathingSounds.volume, 0.05f, breathLerpSpeed);
+                }
+				else
+                {
+                    StepSounds.pitch = Mathf.Lerp(StepSounds.pitch, 0.8f, stepLerpSpeed);
+                    BreathingSounds.volume = Mathf.Lerp(BreathingSounds.volume, 0f, breathLerpSpeed);
+                }
+
+                if (!Grounded)
+                {
+                    StepSounds.volume = 0;
+                }
+                else
+                {
+                    StepSounds.volume = finalStepVolume;
+
+                }
+            }
+			else
+            {
+                finalStepVolume = Mathf.Lerp(finalStepVolume, 0f, stepLerpSpeed);
+                StepSounds.volume = finalStepVolume;
+                BreathingSounds.volume = Mathf.Lerp(BreathingSounds.volume, 0f, breathLerpSpeed);
+            }
+
+			if(lastWasGrounded != Grounded)
+			{
+				if(Grounded)
+				{
+					ImpactSource.PlayOneShot(StompSounds[Random.Range(0, StompSounds.Count)]);
+				}
+				else
+                {
+                    ImpactSource.PlayOneShot(JumpSounds[Random.Range(0, JumpSounds.Count)]);
+                }
+            }
+            lastWasGrounded = Grounded;
+        }
 
 		private void OnDrawGizmosSelected()
 		{

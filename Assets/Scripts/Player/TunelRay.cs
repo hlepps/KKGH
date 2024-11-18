@@ -18,28 +18,39 @@ public class TunelRay : MonoBehaviour
     {
         bool edit = false;
         float realchange = 0;
+        bool updateNormals = false;
 
         float wheel = Input.GetAxis("Mouse ScrollWheel");
         if (wheel != 0)
         {
             edit = true;
             realchange = 0;
-            radius += wheel * Time.deltaTime * scrollSpeed * (1f/Mathf.Sqrt(radius/2f));
+            radius += wheel * Time.deltaTime * scrollSpeed * (1f / Mathf.Sqrt(radius / 2f));
             radius = Mathf.Clamp(radius, 0.5f, 10f);
             gun.SetRate(radius * 25);
         }
 
-        if(Input.GetMouseButton(0))
+        if (Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1))
         {
+            Debug.Log("Mouse button up");
             edit = true;
-            realchange = change;
+            realchange = 0;
+            updateNormals = true;
+            delayCounter = 0;
         }
-        if(Input.GetMouseButton(1))
+        else
         {
-            edit = true;
-            realchange = -change;
+            if (Input.GetMouseButton(0))
+            {
+                edit = true;
+                realchange = change;
+            }
+            if (Input.GetMouseButton(1))
+            {
+                edit = true;
+                realchange = -change;
+            }
         }
-
         if(edit)
         {
             if (delayCounter <= 0)
@@ -61,6 +72,13 @@ public class TunelRay : MonoBehaviour
                         indicator.transform.localScale = Vector3.one * radius;
                         indicator.transform.LookAt(this.transform.position);
                         Map.GetInstance().ModifyCircle(hitinfo.point, radius, realchange);
+
+                        if(updateNormals)
+                        {
+                            Debug.Log("Updating normals");
+                            Map.GetInstance().UpdateNormals(hitinfo.point, radius);
+                            updateNormals = false;
+                        }
                     }
                     else
                     {

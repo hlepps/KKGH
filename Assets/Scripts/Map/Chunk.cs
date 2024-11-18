@@ -179,10 +179,10 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    float timeLastUpdated = 0;
     Vector3[] vertices = new Vector3[49152];
     int[] meshTriangles = new int[49152];
     Vector2[] uv = new Vector2[49152];
+
     void UpdateMeshFromTriangles(Triangle[] localTriangles)
     {
         for (int i = 0; i < localTriangles.Length; i++)
@@ -208,12 +208,14 @@ public class Chunk : MonoBehaviour
         currentMesh.triangles = meshTriangles;
         currentMesh.uv = uv;
 
-        if(Math.Abs(timeLastUpdated - Time.time) > 1)
-        {
-            currentMesh.RecalculateNormals();
+        currentMesh.RecalculateNormals();
+    }
+
+    [SerializeField] bool customRecalculate = true;
+    public void UpdateNormals()
+    {
+        if (customRecalculate)
             currentMesh.normals = CustomNormalRecalculate.Recalculate(currentMesh.vertices, currentMesh.normals);
-            timeLastUpdated = Time.time;
-        }
     }
 
     /// <summary>

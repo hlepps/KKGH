@@ -112,5 +112,23 @@ public class Map : MonoBehaviour
             }
         }
     }
+    /// <summary>
+    /// Updates normals in chunks inside the sphere
+    /// </summary>
+    /// <param name="center">GLOBAL center of the circle</param>
+    /// <param name="radius">Radius of the circle</param>
+    public void UpdateNormals(Vector3 center, float radius)
+    {
+        Collider[] chunks = Physics.OverlapSphere(center, radius, LayerMask.GetMask("ChunkBox"));
+        //Debug.Log(chunks.Length);
+        foreach (Collider coll in chunks)
+        {
+            Chunk chunk = coll.GetComponent<ChunkBox>().GetChunk();
+            if(chunk != null)
+            {
+                chunk.UpdateNormals();
+            }
+        }
+    }
 
 }

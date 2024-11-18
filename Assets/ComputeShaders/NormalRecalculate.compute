@@ -1,0 +1,10 @@
+#pragma kernel CSMain
+#include "Common.hlsl"
+
+RWStructuredBuffer<float> _Normals;
+
+[numthreads(numberOfThreads, numberOfThreads, numberOfThreads)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    
+}
