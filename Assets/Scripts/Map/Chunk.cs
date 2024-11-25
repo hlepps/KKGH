@@ -27,7 +27,7 @@ public class Chunk : MonoBehaviour
     public int GetSize() { return size; }
     [SerializeField] int numberOfThreads = 8;
 
-    float colliderCalculationDelay = 0.1f;
+    float colliderCalculationDelay = 0.2f;
     float colliderCalculationTimer = 0.0f;
 
     bool ready = false;

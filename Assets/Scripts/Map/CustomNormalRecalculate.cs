@@ -45,6 +45,7 @@ public class CustomNormalRecalculate : MonoBehaviour
                 }
             }
         }
+        Debug.Log("AAA");
         return newNormals.ToArray();
     }
 }
