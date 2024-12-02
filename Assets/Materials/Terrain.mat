@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Dirt
+  m_Name: Terrain
   m_Shader: {fileID: -6465566751694194690, guid: b23207fe901fa2a4dbd53959104d5b02,
     type: 3}
   m_Parent: {fileID: 0}
@@ -57,6 +57,7 @@ Material:
     - _QueueControl: 0
     - _QueueOffset: 0
     - _Size: 32
+    - _SmoothTextures: 1
     m_Colors: []
   m_BuildTextureStacks: []
 --- !u!114 &8803886086669773083

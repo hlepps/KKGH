@@ -299,8 +299,11 @@ public class Chunk : MonoBehaviour
                         for (int z = 0; z < size; z++)
                         {
                             float val = values[x + size * (y + size * z)];
-                            Gizmos.color = new Color(val, val, val);
-                            Gizmos.DrawSphere(transform.position + new Vector3(x, y, z), 0.2f);
+                            if (val > 0.01f)
+                            {
+                                Gizmos.color = new Color(val, val, val, val);
+                                Gizmos.DrawSphere(transform.position + new Vector3(x, y, z), 0.2f);
+                            }
                         }
                     }
                 }

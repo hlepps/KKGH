@@ -14,7 +14,7 @@ RWStructuredBuffer<float> _Values;
 RWStructuredBuffer<float> _TextureMap;
 
 [numthreads(numberOfThreads, numberOfThreads, numberOfThreads)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+void CSMain(uint3 id : SV_DispatchThreadID)
 {
     fnl_state noise = fnlCreateState();
     noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
@@ -22,25 +22,28 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     noise.octaves = _Octaves;
     noise.seed = _Seed;
     
-    noise.frequency = _Frequency / 4;
-    float check = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.62f;
-    noise.frequency = _Frequency / 2;
-    check += fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.30f;
-    noise.frequency = _Frequency;
-    check += fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.05f;
-    noise.frequency = _Frequency * 8;
-    check += fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.02f;
+    float check = 0;
     
-    check += 1 - ((id.y - 0) / 16.0);
-    check += 0.4;
-    check = clamp(check, 0, 1);
-
-    //_Values[indexFromCoordinates(id.x, id.y, id.z)] = check;
+    if(_SurfaceLevel) // getting land level
+    {
+        noise.frequency = _Frequency / 4;
+        check = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.55f;
+        noise.frequency = _Frequency / 2;
+        check += fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.4f;
+        noise.frequency = _Frequency;
+        check += fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.04f;
+        noise.frequency = _Frequency * 8;
+        check += fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.01f;
     
-    if (check < 0.6 && _SurfaceLevel)
+        check += 1 - ((id.y - 0) / 16.0);
+        check += 0.4;
+        check = clamp(check, 0, 1);
+    }
+    
+    if (_SurfaceLevel && check < 0.6) // surface
     {
         if (_Offset.x + id.x == 0 || _Offset.z + id.z == 0 ||
-            _Offset.x + id.x == _MapSize.x - _MapSize.x / 32 || _Offset.z + id.z == _MapSize.z - _MapSize.z / 32)
+            _Offset.x + id.x == _MapSize.x - _MapSize.x / 32 || _Offset.z + id.z == _MapSize.z - _MapSize.z / 32) // borders
         {
             _Values[indexFromCoordinates(id.x, id.y, id.z)] = 0;
         }
@@ -51,34 +54,77 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         
         _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 2;
     }
-    else
-    {   
+    else if (!_SurfaceLevel || (_SurfaceLevel && check >= 0.6))// cave
+    {
         
-        if (_Offset.x + id.x == 0 || _Offset.y + id.y == 0 || _Offset.z + id.z == 0  ||
-            _Offset.x + id.x == _MapSize.x - _MapSize.x / 32 || _Offset.z + id.z == _MapSize.z - _MapSize.z / 32)
+        if (_Offset.x + id.x == 0 || _Offset.y + id.y == 0 || _Offset.z + id.z == 0 ||
+            _Offset.x + id.x == _MapSize.x - _MapSize.x / 32 || _Offset.z + id.z == _MapSize.z - _MapSize.z / 32) // borders
         {
             _Values[indexFromCoordinates(id.x, id.y, id.z)] = 0;
         }
         else
         {
+            //first: fractal ridged noise for cave base
             noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
-            noise.fractal_type = FNL_FRACTAL_NONE;
-            noise.octaves = _Octaves;
+            noise.fractal_type = FNL_FRACTAL_RIDGED;
+            noise.octaves = 2;
             noise.seed = _Seed;
             
-            noise.frequency = _Frequency;
-            float temp = fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.5f;
-            noise.frequency = _Frequency * 2;
-            temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.25f;
-            noise.frequency = _Frequency * 4;
-            temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.25f;
+            noise.seed = _Seed + 1;
+            noise.frequency = _Frequency * 0.5f;
+            float cave1 = fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 1.0f;
             
-            temp /= 2;
-            noise.fractal_type = FNL_FRACTAL_RIDGED;
-            noise.frequency = _Frequency;
-            temp += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.5f;
+            cave1 = clamp(cave1, 0, 1);
+            cave1 = abs(cave1 - 0.5f);
+            cave1 = cave1 * 3;
+            cave1 = clamp(cave1, 0, 1);
             
-            _Values[indexFromCoordinates(id.x, id.y, id.z)] = 1 - temp;
+            cave1 = 1 - cave1;
+            
+            // two times
+            noise.seed = _Seed + 2;
+            noise.frequency = _Frequency * 0.5f;
+            float cave2 = fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 1.0f;
+            
+            cave2 = clamp(cave2, 0, 1);
+            cave2 = abs(cave2 - 0.5f);
+            cave2 = cave2 * 3;
+            cave2 = clamp(cave2, 0, 1);
+            
+            cave2 = 1 - cave2;
+            
+            
+            
+            
+            //some turbulence to it
+            noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
+            noise.fractal_type = FNL_FRACTAL_NONE;
+            noise.octaves = 1; //not necessary if none fractal
+            
+            noise.seed = _Seed * 2;
+            noise.frequency = _Frequency * 3;
+            float turbulence = fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.2f;
+            noise.seed = _Seed * 3;
+            noise.frequency = _Frequency * 6;
+            turbulence += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.3f;
+            noise.seed = _Seed * 4;
+            noise.frequency = _Frequency * 12;
+            turbulence += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.4f;
+            noise.seed = _Seed * 5;
+            noise.frequency = _Frequency * 24;
+            turbulence += fnlGetNoise3D(noise, id.x + _Offset.x, id.y + _Offset.y, id.z + _Offset.z) * 0.5f;
+            
+            //shifting down
+            turbulence -= 0.5;
+            //easing
+            turbulence /= 10;
+            
+            //combining with fuzzy set theory
+            float final = min(cave1, cave2);
+            final += turbulence;
+            
+            final = clamp(final, 0, 1);
+            _Values[indexFromCoordinates(id.x, id.y, id.z)] = 1 - final;
         }
         
         _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 0;
