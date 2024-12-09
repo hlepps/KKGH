@@ -1,4 +1,5 @@
 #pragma kernel CSMain
+#pragma target 6.6
 #include "OpenSource/FastNoiseLite.hlsl"
 #include "Common.hlsl"
 
@@ -13,6 +14,8 @@ bool _SurfaceLevel;
 RWStructuredBuffer<float> _Values;
 RWStructuredBuffer<float> _TextureMap;
 
+
+
 [numthreads(numberOfThreads, numberOfThreads, numberOfThreads)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
@@ -24,23 +27,61 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     float check = 0;
     
-    if(_SurfaceLevel) // getting land level
-    {
-        noise.frequency = _Frequency / 4;
-        check = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.55f;
-        noise.frequency = _Frequency / 2;
-        check += fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.4f;
-        noise.frequency = _Frequency;
-        check += fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.04f;
-        noise.frequency = _Frequency * 8;
-        check += fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z) * 0.01f;
     
-        check += 1 - ((id.y - 0) / 16.0);
-        check += 0.4;
+    if (_SurfaceLevel) // getting land level
+    {
+        float d = 1.0;
+        float k = 10.0;
+        
+        float temp = 0;
+        float deriv = 0;
+        float deriv10 = 0;
+        float deriv01 = 0;
+        noise.frequency = _Frequency * 0.5;
+        temp = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z);
+        deriv10 = fnlGetNoise2D(noise, id.x + 1 + _Offset.x, id.z + _Offset.z) - temp;
+        deriv01 = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + 1 + _Offset.z) - temp;
+        deriv += abs(deriv10) + abs(deriv01);
+        check += temp * (1 / (1 + (deriv * k))) * 0.70;
+        noise.frequency = _Frequency * 1.75;
+        temp = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z);
+        deriv10 = fnlGetNoise2D(noise, id.x + 1 + _Offset.x, id.z + _Offset.z) - temp;
+        deriv01 = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + 1 + _Offset.z) - temp;
+        deriv += abs(deriv10) + abs(deriv01);
+        check += temp * (1 / (1 + (deriv * k))) * 0.10;
+        noise.frequency = _Frequency * 2.0f;
+        temp = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z);
+        deriv10 = fnlGetNoise2D(noise, id.x + 1 + _Offset.x, id.z + _Offset.z) - temp;
+        deriv01 = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + 1 + _Offset.z) - temp;
+        deriv += abs(deriv10) + abs(deriv01);
+        check += temp * (1 / (1 + (deriv * k))) * 0.06;
+        noise.frequency = _Frequency * 3.5f;
+        temp = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z);
+        deriv10 = fnlGetNoise2D(noise, id.x + 1 + _Offset.x, id.z + _Offset.z) - temp;
+        deriv01 = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + 1 + _Offset.z) - temp;
+        deriv += abs(deriv10) + abs(deriv01);
+        check += temp * (1 / (1 + (deriv * k))) * 0.05;
+        noise.frequency = _Frequency * 4.0f ;
+        temp = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z);
+        deriv10 = fnlGetNoise2D(noise, id.x + 1 + _Offset.x, id.z + _Offset.z) - temp;
+        deriv01 = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + 1 + _Offset.z) - temp;
+        deriv += abs(deriv10) + abs(deriv01);
+        check += temp * (1 / (1 + (deriv * k))) * 0.04;
+        noise.frequency = _Frequency * 5.5f;
+        temp = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + _Offset.z);
+        deriv10 = fnlGetNoise2D(noise, id.x + 1 + _Offset.x, id.z + _Offset.z) - temp;
+        deriv01 = fnlGetNoise2D(noise, id.x + _Offset.x, id.z + 1 + _Offset.z) - temp;
+        deriv += abs(deriv10) + abs(deriv01);
+        check += temp * (1 / (1 + (deriv * k))) * 0.03;
+    
+        //check += 1 - ((id.y - 0) / 16.0);
+        //check += 0.4;
+        check += 1;
+        check /= 2;
         check = clamp(check, 0, 1);
     }
-    
-    if (_SurfaceLevel && check < 0.6) // surface
+    _Values[indexFromCoordinates(id.x, id.y, id.z)] = 0.5 - ((id.y / 32.0) - check);
+    if (_SurfaceLevel && (id.y / 32.0) - check > -1 / 32.0) // surface
     {
         if (_Offset.x + id.x == 0 || _Offset.z + id.z == 0 ||
             _Offset.x + id.x == _MapSize.x - _MapSize.x / 32 || _Offset.z + id.z == _MapSize.z - _MapSize.z / 32) // borders
@@ -49,12 +90,12 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         }
         else
         {
-            _Values[indexFromCoordinates(id.x, id.y, id.z)] = check;
+            _Values[indexFromCoordinates(id.x, id.y, id.z)] = 0.5 - ((id.y / 32.0)-check);
         }
         
         _TextureMap[indexFromCoordinates(id.x, id.y, id.z)] = 2;
     }
-    else if (!_SurfaceLevel || (_SurfaceLevel && check >= 0.6))// cave
+    else if (!_SurfaceLevel || (id.y / 32.0) - check <= -1/32.0)// cave
     {
         
         if (_Offset.x + id.x == 0 || _Offset.y + id.y == 0 || _Offset.z + id.z == 0 ||
@@ -92,8 +133,6 @@ void CSMain(uint3 id : SV_DispatchThreadID)
             cave2 = clamp(cave2, 0, 1);
             
             cave2 = 1 - cave2;
-            
-            
             
             
             //some turbulence to it

@@ -3848,6 +3848,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 701612672953344586, guid: 4e48a1fc67b3fc14cbce62ccf1d3f338,
         type: 3}
+      propertyPath: Gravity
+      value: -6.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 701612672953344586, guid: 4e48a1fc67b3fc14cbce62ccf1d3f338,
+        type: 3}
       propertyPath: StepSounds
       value: 
       objectReference: {fileID: 791435392}
