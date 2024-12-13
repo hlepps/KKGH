@@ -29,27 +29,6 @@ public class Noise : MonoBehaviour
         textureMapBuffer = null;
     }
 
-    public (float[] noise, float[] layers) GetNoiseValues(int offsetX, int offsetY, int offsetZ, int seed = 1170)
-    {
-        float[] noiseValues = new float[size * size * size];
-        float[] layersValues = new float[size * size * size];
-        
-        noiseCS.SetBuffer(0, "_Values", valuesBuffer);
-        noiseCS.SetBuffer(0, "_TextureMap", textureMapBuffer);
-        noiseCS.SetInt("_Size", size);
-        noiseCS.SetFloat("_Frequency", 0.02f);
-        noiseCS.SetInt("_Octaves", 1);
-        noiseCS.SetInt("_Seed", seed);
-        noiseCS.SetInts("_Offset", new int[] {offsetX,offsetY,offsetZ});
-
-        int dispatch = size / numberOfThreads;
-        noiseCS.Dispatch(0, dispatch, dispatch, dispatch);
-
-        valuesBuffer.GetData(noiseValues);
-        textureMapBuffer.GetData(layersValues);
-
-        return (noiseValues, layersValues);
-    }
     public (float[] noise, float[] layers) GetSurfaceValues(int3 offset, bool isSurface, int3 mapsize, int seed = 1170)
     {
         float[] noiseValues = new float[size * size * size];
