@@ -6,3 +6,6 @@ https://transvoxel.org/
 
 Quaternion
 https://gist.github.com/mattatz/40a91588d5fb38240403f198a938a593
+
+Duch
+https://sketchfab.com/3d-models/ghost-1dd1cdac701b42e6ac41bdc194c03139

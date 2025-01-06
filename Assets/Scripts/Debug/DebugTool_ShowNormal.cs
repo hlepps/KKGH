@@ -1,4 +1,5 @@
 using UnityEditor;
+using UnityEditor;
 using UnityEngine;
 
 public class DebugTool_ShowNormal : MonoBehaviour
@@ -9,6 +10,7 @@ public class DebugTool_ShowNormal : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
+#if UNITY_EDITOR
         if (!isShowNormal) return;
 
         if (!TryGetComponent<MeshFilter>(out var meshFilter)) return;
@@ -29,5 +31,6 @@ public class DebugTool_ShowNormal : MonoBehaviour
         }
 
         Handles.color = defaultColor;
+#endif
     }
 } 

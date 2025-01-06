@@ -23,14 +23,17 @@ public class PlayerSpawner : MonoBehaviour
         Debug.Log($"Spawn:{spawnPos}");
         map.ModifyCircle(spawnPos, 5, -0.5f);
         playerObject.transform.position = spawnPos;
+        map.SetPlayerSpawned();
     }
 
     private void Update()
     {
+        /*
         if(Input.GetKeyDown(KeyCode.P))
         {
             Spawn();
         }
+        */
     }
 
     private void OnDrawGizmosSelected()

@@ -7,12 +7,19 @@ public class TunelRay : MonoBehaviour
 
     [SerializeField] GameObject indicator;
     [SerializeField] float radius = 2f;
-    [SerializeField] float change = -0.1f/30f;
-    [SerializeField] float delay = 1f/15f;
+    [SerializeField] float change = -0.1f / 30f;
+    [SerializeField] float delay = 1f / 15f;
     [SerializeField] float scrollSpeed = 1f;
     [SerializeField] Gun gun;
 
     float delayCounter;
+    bool lockVacuum = false;
+    public void SetVacuumLock(bool value) => lockVacuum = value;
+    public bool GetVacuumLock() => lockVacuum;
+
+    public float GetCurrentRadius() => radius;
+
+    float cooldown = 0f;
 
     private void Update()
     {
@@ -26,13 +33,13 @@ public class TunelRay : MonoBehaviour
             edit = true;
             realchange = 0;
             radius += wheel * Time.deltaTime * scrollSpeed * (1f / Mathf.Sqrt(radius / 2f));
-            radius = Mathf.Clamp(radius, 0.5f, 10f);
+            radius = Mathf.Clamp(radius, 0.5f, 5f);
             gun.SetRate(radius * 25);
         }
 
         if (Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1))
         {
-            Debug.Log("Mouse button up");
+            //Debug.Log("Mouse button up");
             edit = true;
             realchange = 0;
             updateNormals = true;
@@ -51,14 +58,15 @@ public class TunelRay : MonoBehaviour
                 realchange = -change;
             }
         }
-        if(edit)
+        if (edit && !lockVacuum)
         {
             if (delayCounter <= 0)
             {
                 delayCounter = delay;
                 Ray ray = new Ray(transform.position, transform.forward);
-                if (Physics.Raycast(ray, out RaycastHit hitinfo, 100, LayerMask.GetMask("Chunk")))
+                if (Physics.Raycast(ray, out RaycastHit hitinfo, 100, LayerMask.GetMask("Chunk", "Ghost")))
                 {
+
                     if (Vector3.Distance(transform.position, hitinfo.point) > 1)
                     {
                         indicator.SetActive(true);
@@ -71,20 +79,33 @@ public class TunelRay : MonoBehaviour
                         indicator.transform.position = hitinfo.point;
                         indicator.transform.localScale = Vector3.one * radius;
                         indicator.transform.LookAt(this.transform.position);
-                        Map.GetInstance().ModifyCircle(hitinfo.point, radius, realchange);
-
-                        if(updateNormals)
+                        if (hitinfo.collider.gameObject.tag == "Ghost" && realchange < 0)
                         {
-                            Debug.Log("Updating normals");
-                            Map.GetInstance().UpdateNormals(hitinfo.point, radius);
-                            updateNormals = false;
+                            hitinfo.collider.gameObject.GetComponent<Ghost>().Damage(Time.deltaTime * radius);
                         }
+                        else
+                        {
+                            Map.GetInstance().ModifyCircle(hitinfo.point, radius, realchange * cooldown);
+                            if (updateNormals)
+                            {
+                                //Debug.Log("Updating normals");
+                                Map.GetInstance().UpdateNormals(hitinfo.point, radius);
+                                updateNormals = false;
+                            }
+                        }
+                        //Debug.Log(cooldown);
+
+                        cooldown += Time.deltaTime * 2f;
+                        if (cooldown > 1) cooldown = 1;
+
+                        
                     }
                     else
                     {
                         gun.StopParticleSystem();
                         indicator.SetActive(false);
                     }
+
                 }
                 else
                 {
@@ -99,6 +120,9 @@ public class TunelRay : MonoBehaviour
         {
             indicator.SetActive(false);
             gun.StopParticleSystem();
-        }    
+
+            cooldown -= Time.deltaTime / 5f;
+            if (cooldown < 0) cooldown = 0;
+        }
     }
 }

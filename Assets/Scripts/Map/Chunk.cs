@@ -5,17 +5,17 @@ using Unity.VisualScripting;
 using UnityEngine;
 using System;
 using System.Linq;
-using UnityEditor.ShaderGraph.Internal;
 using UnityEngine.Rendering;
 using Unity.Burst.Intrinsics;
+using UnityEngine.UIElements;
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
 [RequireComponent(typeof(MeshCollider))]
 public class Chunk : MonoBehaviour
 {
-    uint3 id;
-    public uint3 GetID() { return id; }
+    int3 id;
+    public int3 GetID() { return id; }
     [SerializeField] ComputeShader chunkCS;
     [SerializeField] ComputeShader updateChunkCS;
     ComputeBuffer trianglesBuffer;
@@ -29,6 +29,7 @@ public class Chunk : MonoBehaviour
 
     float colliderCalculationDelay = 0.2f;
     float colliderCalculationTimer = 0.0f;
+    float afterModifySmoothTime = 0.5f;
 
     bool ready = false;
     public bool IsReady() { return ready; }
@@ -38,6 +39,10 @@ public class Chunk : MonoBehaviour
     MeshCollider meshCollider;
 
     float[] values;
+    public float GetPointValue(int3 position)
+    {
+        return values[position.x + (size * (position.y + (size * position.z)))];
+    }
     float[] texturemap;
     public int[] lastColorCount { get; private set; }
 
@@ -62,7 +67,7 @@ public class Chunk : MonoBehaviour
         public static int GetSize() { return (sizeof(float) * 3) * 3 + (sizeof(float) * 2) * 3; }
     }
 
-    public void InitChunk(float[] newvalues, uint3 chunkID, float[] newTexturemap)
+    public void InitChunk(float[] newvalues, int3 chunkID, float[] newTexturemap)
     {
         id = chunkID;
         values = new float[size * size * size];
@@ -268,18 +273,29 @@ public class Chunk : MonoBehaviour
             }
         }
         Gun.Instance.SetColor(found);
-        //Debug.Log(ahh);
+        //Debug.Log("ahh");
         colorCountBuffer.SetData(new int[32]);
 
 
         GenerateMesh();
+        smoothTimer = afterModifySmoothTime;
     }
 
 
     Vector3 circlecenterdebug;
 
+    float smoothTimer = 0;
     private void Update()
     {
+        if(smoothTimer < 0)
+        {
+            UpdateNormals();
+            smoothTimer = 0;
+        }
+        else if (smoothTimer > 0)
+        {
+            smoothTimer -= Time.deltaTime;
+        }
     }
 
     float gizmosTimer = 0;

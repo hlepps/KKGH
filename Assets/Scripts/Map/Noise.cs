@@ -29,7 +29,7 @@ public class Noise : MonoBehaviour
         textureMapBuffer = null;
     }
 
-    public (float[] noise, float[] layers) GetSurfaceValues(int3 offset, bool isSurface, int3 mapsize, int seed = 1170)
+    public (float[] noise, float[] layers) GetSurfaceValues(int3 offset, bool isSurface, bool isEmpty, int3 mapsize, int seed = 1170)
     {
         float[] noiseValues = new float[size * size * size];
         float[] layersValues = new float[size * size * size];
@@ -43,6 +43,7 @@ public class Noise : MonoBehaviour
         surfaceCS.SetInts("_Offset", new int[] {offset.x, offset.y, offset.z });
         surfaceCS.SetInts("_MapSize", new int[] {mapsize.x, mapsize.y, mapsize.z });
         surfaceCS.SetBool("_SurfaceLevel", isSurface);
+        surfaceCS.SetBool("_EmptyChunk", isEmpty);
 
         int dispatch = size / numberOfThreads;
         surfaceCS.Dispatch(0, dispatch, dispatch, dispatch);

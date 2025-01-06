@@ -10,6 +10,7 @@ int3 _Offset;
 int3 _MapSize;
 
 bool _SurfaceLevel;
+bool _EmptyChunk;
 
 RWStructuredBuffer<float> _Values;
 RWStructuredBuffer<float> _TextureMap;
@@ -19,14 +20,23 @@ RWStructuredBuffer<float> _TextureMap;
 [numthreads(numberOfThreads, numberOfThreads, numberOfThreads)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
+    if (_EmptyChunk)
+    {
+        _Values[indexFromCoordinates(id.x, id.y, id.z)] = 0;
+        return;
+    }
+    
     fnl_state noise = fnlCreateState();
     noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
     noise.fractal_type = FNL_FRACTAL_NONE;
     noise.octaves = _Octaves;
     noise.seed = _Seed;
     
-    float check = 0;
+    _Offset.x += 4096;
+    _Offset.y += 4096;
+    _Offset.z += 4096;
     
+    float check = 0;
     
     if (_SurfaceLevel) // getting land level
     {
@@ -83,8 +93,11 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     _Values[indexFromCoordinates(id.x, id.y, id.z)] = 0.5 - ((id.y / 32.0) - check);
     if (_SurfaceLevel && (id.y / 32.0) - check > -1 / 32.0) // surface
     {
-        if (_Offset.x + id.x == 0 || _Offset.z + id.z == 0 ||
-            _Offset.x + id.x == _MapSize.x - _MapSize.x / 32 || _Offset.z + id.z == _MapSize.z - _MapSize.z / 32) // borders
+        
+        //if (_Offset.x + id.x == 0 || _Offset.z + id.z == 0 ||
+        //    _Offset.x + id.x == _MapSize.x - _MapSize.x / 32 || _Offset.z + id.z == _MapSize.z - _MapSize.z / 32) // borders
+        // borders disabled
+        if(false)
         {
             _Values[indexFromCoordinates(id.x, id.y, id.z)] = 0;
         }
@@ -98,8 +111,10 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     else if (!_SurfaceLevel || (id.y / 32.0) - check <= -1/32.0)// cave
     {
         
-        if (_Offset.x + id.x == 0 || _Offset.y + id.y == 0 || _Offset.z + id.z == 0 ||
-            _Offset.x + id.x == _MapSize.x - _MapSize.x / 32 || _Offset.z + id.z == _MapSize.z - _MapSize.z / 32) // borders
+        //if (_Offset.x + id.x == 0 || _Offset.y + id.y == 0 || _Offset.z + id.z == 0 ||
+        //    _Offset.x + id.x == _MapSize.x - _MapSize.x / 32 || _Offset.z + id.z == _MapSize.z - _MapSize.z / 32) // borders
+        // borders disabled
+        if(false)
         {
             _Values[indexFromCoordinates(id.x, id.y, id.z)] = 0;
         }

@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 2
   tags:
   - CinemachineTarget
+  - Collectible
+  - Ghost
+  - GlobalVolume
   layers:
   - Default
   - TransparentFX
@@ -19,7 +22,7 @@ TagManager:
   - DontCollideWithPlayer
   - PriorityCamera
   - PostProcessing
-  - 
+  - Ghost
   - 
   - 
   - 
